@@ -6,7 +6,7 @@ provider "azurerm" {
 
 # Create a resource group
 resource "azurerm_resource_group" "kiyot" {
-  name     = "${var.prefix}-kiyot"
+  name     = "${var.cluster-name}-kiyot"
   location = var.region
 }
 
@@ -48,19 +48,19 @@ resource "azurerm_subnet_route_table_association" "kiyot-rt-assoc" {
 }
 
 resource "azurerm_public_ip" "master-ip" {
-  name                = "${var.prefix}-master-ip"
+  name                = "${var.cluster-name}-master-ip"
   location            = "${azurerm_resource_group.kiyot.location}"
   resource_group_name = "${azurerm_resource_group.kiyot.name}"
   allocation_method   = "Dynamic"
 }
 
 resource "azurerm_network_interface" "master-nic" {
-  name                = "${var.prefix}-master-nic"
+  name                = "${var.cluster-name}-master-nic"
   location            = "${azurerm_resource_group.kiyot.location}"
   resource_group_name = "${azurerm_resource_group.kiyot.name}"
 
   ip_configuration {
-    name                          = "${var.prefix}-master-nic"
+    name                          = "${var.cluster-name}-master-nic"
     subnet_id                     = "${azurerm_subnet.kiyot-subnet.id}"
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = "${azurerm_public_ip.master-ip.id}"
@@ -68,7 +68,7 @@ resource "azurerm_network_interface" "master-nic" {
 }
 
 resource "azurerm_virtual_machine" "k8s-master" {
-  name                  = "${var.prefix}-k8s-master"
+  name                  = "${var.cluster-name}-k8s-master"
   location              = "${azurerm_resource_group.kiyot.location}"
   resource_group_name   = "${azurerm_resource_group.kiyot.name}"
   network_interface_ids = ["${azurerm_network_interface.master-nic.id}"]
@@ -108,19 +108,19 @@ resource "azurerm_virtual_machine" "k8s-master" {
 }
 
 resource "azurerm_public_ip" "worker-ip" {
-  name                = "${var.prefix}-worker-ip"
+  name                = "${var.cluster-name}-worker-ip"
   location            = "${azurerm_resource_group.kiyot.location}"
   resource_group_name = "${azurerm_resource_group.kiyot.name}"
   allocation_method   = "Dynamic"
 }
 
 resource "azurerm_network_interface" "kiyot-worker-nic" {
-  name                = "${var.prefix}-kiyot-worker-nic"
+  name                = "${var.cluster-name}-kiyot-worker-nic"
   location            = "${azurerm_resource_group.kiyot.location}"
   resource_group_name = "${azurerm_resource_group.kiyot.name}"
 
   ip_configuration {
-    name                          = "${var.prefix}-kiyot-worker-nic"
+    name                          = "${var.cluster-name}-kiyot-worker-nic"
     subnet_id                     = "${azurerm_subnet.kiyot-subnet.id}"
     private_ip_address_allocation = "Dynamic"
     public_ip_address_id          = "${azurerm_public_ip.worker-ip.id}"
@@ -129,7 +129,7 @@ resource "azurerm_network_interface" "kiyot-worker-nic" {
 
 
 resource "azurerm_virtual_machine" "k8s-worker" {
-  name                  = "${var.prefix}-k8s-worker"
+  name                  = "${var.cluster-name}-k8s-worker"
   location              = "${azurerm_resource_group.kiyot.location}"
   resource_group_name   = "${azurerm_resource_group.kiyot.name}"
   network_interface_ids = ["${azurerm_network_interface.kiyot-worker-nic.id}"]
@@ -168,6 +168,22 @@ resource "azurerm_virtual_machine" "k8s-worker" {
   }
 }
 
+resource "random_id" "k8stoken-prefix" {
+  byte_length = 3
+}
+
+resource "random_id" "k8stoken-suffix" {
+  byte_length = 8
+}
+
+locals {
+  k8stoken = format(
+    "%s.%s",
+    random_id.k8stoken-prefix.hex,
+    random_id.k8stoken-suffix.hex,
+  )
+}
+
 data "template_file" "master-userdata" {
   template = file(var.master-userdata)
 
@@ -176,7 +192,7 @@ data "template_file" "master-userdata" {
     k8s_version             = var.k8s-version
     pod_cidr                = var.pod-cidr
     service_cidr            = var.service-cidr
-    subnet_cidrs            = join(" ", aws_subnet.subnets.*.cidr_block)
+    subnet_cidrs            = azurerm_subnet.kiyot-subnet.address_prefix
     node_nametag            = var.cluster-name
     default_instance_type   = var.default-instance-type
     default_volume_size     = var.default-volume-size

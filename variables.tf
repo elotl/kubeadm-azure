@@ -1,4 +1,4 @@
-variable "prefix" {
+variable "cluster-name" {
 }
 
 variable "ssh-key-path" {
