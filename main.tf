@@ -7,7 +7,7 @@ provider "azurerm" {
 # Create a resource group
 resource "azurerm_resource_group" "kiyot" {
   name     = "${var.prefix}-kiyot"
-  location = "East US"
+  location = var.region
 }
 
 # Create a virtual network within the resource group
@@ -15,14 +15,14 @@ resource "azurerm_virtual_network" "kiyot-vnet" {
   name                = "kiyot-virtual-network"
   resource_group_name = "${azurerm_resource_group.kiyot.name}"
   location            = "${azurerm_resource_group.kiyot.location}"
-  address_space       = ["172.20.0.0/16"]
+  address_space       = [var.vpc-cidr]
 }
 
 resource "azurerm_subnet" "kiyot-subnet" {
   name                 = "internal"
   resource_group_name  = "${azurerm_resource_group.kiyot.name}"
   virtual_network_name = "${azurerm_virtual_network.kiyot-vnet.name}"
-  address_prefix       = "172.20.0.0/24"
+  address_prefix       = cidrsubnet(var.vpc-cidr, 4, 0)
 }
 
 resource "azurerm_route_table" "kiyot-rt" {
@@ -33,7 +33,7 @@ resource "azurerm_route_table" "kiyot-rt" {
 
   route {
     name           = "route1"
-    address_prefix = "10.0.0.0/16"
+    address_prefix = var.vpc-cidr
     next_hop_type  = "vnetlocal"
   }
   
@@ -93,6 +93,7 @@ resource "azurerm_virtual_machine" "k8s-master" {
     computer_name  = "master"
     admin_username = "ubuntu"
     # admin_password = ""
+    custom_data = data.template_file.master-userdata.rendered
   }
   os_profile_linux_config {
     disable_password_authentication = true
@@ -153,6 +154,7 @@ resource "azurerm_virtual_machine" "k8s-worker" {
     computer_name  = "kiyotworker"
     admin_username = "ubuntu"
     # admin_password = ""
+    custom_data = data.template_file.milpa-worker-userdata.rendered
   }
   os_profile_linux_config {
     disable_password_authentication = true
@@ -163,5 +165,41 @@ resource "azurerm_virtual_machine" "k8s-worker" {
   }
   tags = {
     environment = "kiyot"
+  }
+}
+
+data "template_file" "master-userdata" {
+  template = file(var.master-userdata)
+
+  vars = {
+    k8stoken                = local.k8stoken
+    k8s_version             = var.k8s-version
+    pod_cidr                = var.pod-cidr
+    service_cidr            = var.service-cidr
+    subnet_cidrs            = join(" ", aws_subnet.subnets.*.cidr_block)
+    node_nametag            = var.cluster-name
+    default_instance_type   = var.default-instance-type
+    default_volume_size     = var.default-volume-size
+    boot_image_tags         = jsonencode(var.boot-image-tags)
+    license_key             = var.license-key
+    license_id              = var.license-id
+    license_username        = var.license-username
+    license_password        = var.license-password
+    itzo_url                = var.itzo-url
+    itzo_version            = var.itzo-version
+    milpa_image             = var.milpa-image
+    network_plugin          = var.network-plugin
+    configure_cloud_routes  = var.configure-cloud-routes
+  }
+}
+
+data "template_file" "milpa-worker-userdata" {
+  template = file(var.milpa-worker-userdata)
+
+  vars = {
+    k8stoken        = local.k8stoken
+    k8s_version     = var.k8s-version
+    masterIP        = azurerm_network_interface.master-nic.private_ip_address
+    network_plugin  = var.network-plugin
   }
 }
