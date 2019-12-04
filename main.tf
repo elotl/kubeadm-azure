@@ -7,7 +7,7 @@ provider "azurerm" {
 # Create a resource group
 resource "azurerm_resource_group" "kiyot" {
   name     = "${var.cluster-name}-kiyot"
-  location = var.region
+  location = var.location
 }
 
 # Create a virtual network within the resource group
@@ -72,7 +72,7 @@ resource "azurerm_virtual_machine" "k8s-master" {
   location              = "${azurerm_resource_group.kiyot.location}"
   resource_group_name   = "${azurerm_resource_group.kiyot.name}"
   network_interface_ids = ["${azurerm_network_interface.master-nic.id}"]
-  vm_size               = "Standard_DS1_v2"
+  vm_size               = "Standard_DS2_v2"
 
   delete_os_disk_on_termination = true
   delete_data_disks_on_termination = true
@@ -133,7 +133,7 @@ resource "azurerm_virtual_machine" "k8s-worker" {
   location              = "${azurerm_resource_group.kiyot.location}"
   resource_group_name   = "${azurerm_resource_group.kiyot.name}"
   network_interface_ids = ["${azurerm_network_interface.kiyot-worker-nic.id}"]
-  vm_size               = "Standard_DS1_v2"
+  vm_size               = "Standard_DS2_v2"
 
   delete_os_disk_on_termination = true
   delete_data_disks_on_termination = true
@@ -206,6 +206,15 @@ data "template_file" "master-userdata" {
     milpa_image             = var.milpa-image
     network_plugin          = var.network-plugin
     configure_cloud_routes  = var.configure-cloud-routes
+    azure_subscription_id   = var.azure-subscription-id
+    azure_tenant_id         = var.azure-tenant-id
+    azure_client_id         = var.azure-client-id
+    azure_client_secret     = var.azure-client-secret
+    location                = var.location
+    subnet_name             = azurerm_subnet.kiyot-subnet.name
+    vnet_name               = azurerm_virtual_network.kiyot-vnet.name
+    resource_group          = azurerm_resource_group.kiyot.name
+    route_table_name        = azurerm_route_table.kiyot-rt.name
   }
 }
 

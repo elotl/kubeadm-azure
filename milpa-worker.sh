@@ -71,18 +71,6 @@ systemctl daemon-reload
 systemctl enable criproxy
 systemctl restart criproxy
 
-# Configure kubelet.
-name=""
-while [[ -z "$name" ]]; do
-    sleep 1
-    name="$(hostname -f)"
-done
-
-ip=""
-while [[ -z "$ip" ]]; do
-    sleep 1
-    ip="$(host $name | awk '{print $4}')"
-done
 
 cat <<EOF > /tmp/kubeadm-config.yaml
 apiVersion: kubeadm.k8s.io/v1beta1
@@ -93,11 +81,9 @@ discovery:
     unsafeSkipCAVerification: true
     apiServerEndpoint: ${masterIP}:6443
 nodeRegistration:
-  name: $name
+  name: vilmostest-k8s-worker
   criSocket: unix:///run/criproxy.sock
   kubeletExtraArgs:
-    node-ip: $ip
-    cloud-provider: aws
 $(if [[ "${network_plugin}" = "kubenet" ]]; then
     echo "    network-plugin: kubenet"
     echo "    non-masquerade-cidr: 0.0.0.0/0"
@@ -145,3 +131,4 @@ systemctl restart kiyot-override-proc
 
 # Join cluster.
 kubeadm join --config=/tmp/kubeadm-config.yaml
+

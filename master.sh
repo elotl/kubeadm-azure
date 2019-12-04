@@ -10,12 +10,6 @@ apt-get install -y kubelet="${k8s_version}*" kubeadm="${k8s_version}*" kubectl="
 # Docker sets the policy for the FORWARD chain to DROP, change it back.
 iptables -P FORWARD ACCEPT
 
-name=""
-while [[ -z "$name" ]]; do
-    sleep 1
-    name="$(hostname -f)"
-done
-
 if [ -z ${k8s_version} ]; then
     k8s_version=$(curl -fL https://storage.googleapis.com/kubernetes-release/release/stable.txt)
 else
@@ -23,24 +17,48 @@ else
 fi
 
 # Export userdata template substitution variables.
-export pod_cidr="172.31.0.0/16"
-export service_cidr="10.96.0.0/12"
-export subnet_cidrs="172.20.0.0/24"
-export node_nametag="bcox"
-# export aws_access_key_id="${aws_access_key_id}"
-# export aws_secret_access_key="${aws_secret_access_key}"
-# export aws_region="${aws_region}"
-# export ecs_cluster_name="${ecs_cluster_name}"
-# export default_instance_type="${default_instance_type}"
-export default_volume_size="${default_volume_size}"
-export boot_image_tags="${boot_image_tags}"
-export license_key="${license_key}"
-export license_id="${license_id}"
-export license_username="${license_username}"
-export license_password="${license_password}"
-export itzo_url="${itzo_url}"
-export itzo_version="${itzo_version}"
-export milpa_image="${milpa_image}"
+export pod_cidr='${pod_cidr}'
+export service_cidr='${service_cidr}'
+export subnet_cidrs='${subnet_cidrs}'
+export node_nametag='${node_nametag}'
+export default_instance_type='${default_instance_type}'
+export default_volume_size='${default_volume_size}'
+export boot_image_tags='${boot_image_tags}'
+export license_key='${license_key}'
+export license_id='${license_id}'
+export license_username='${license_username}'
+export license_password='${license_password}'
+export itzo_url='${itzo_url}'
+export itzo_version='${itzo_version}'
+export milpa_image='${milpa_image}'
+export azure_subscription_id='${azure_subscription_id}'
+export azure_tenant_id='${azure_tenant_id}'
+export azure_client_id='${azure_client_id}'
+export azure_client_secret='${azure_client_secret}'
+export location='${location}'
+
+mkdir -p /etc/kubernetes
+cat <<EOF > /etc/kubernetes/cloud.conf
+{
+    "cloud":"AzurePublicCloud",
+    "subscriptionId": "${azure_subscription_id}",
+    "tenantId": "${azure_tenant_id}",
+    "aadClientId": "${azure_client_id}",
+    "aadClientSecret": "${azure_client_secret}",
+    "resourceGroup": "${resource_group}",
+    "location": "${location}",
+    "subnetName": "${subnet_name}",
+    "securityGroupName": "${node_nametag}",
+    "vnetName": "${vnet_name}",
+    "vnetResourceGroup": "${resource_group}",
+    "routeTableName": "${route_table_name}",
+    "primaryAvailabilitySetName": "${node_nametag}",
+    "routeTableResourceGroup": "${resource_group}",
+    "cloudProviderBackoff": false,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": true,
+}
+EOF
 
 # Set CIDRs for ip-masq-agent.
 non_masquerade_cidrs="${pod_cidr}"
@@ -57,10 +75,10 @@ bootstrapTokens:
   - system:bootstrappers:kubeadm:default-node-token
   token: ${k8stoken}
 nodeRegistration:
-  name: $name
+  name: vilmostest-k8s-master
   kubeletExtraArgs:
-    node-ip: $ip
     cloud-provider: azure
+    cloud-config: /etc/kubernetes/cloud.conf
 $(if [[ "${network_plugin}" = "kubenet" ]]; then
     echo '    network-plugin: kubenet'
     echo '    non-masquerade-cidr: 0.0.0.0/0'
@@ -74,18 +92,28 @@ networking:
 apiServer:
   extraArgs:
     enable-admission-plugins: DefaultStorageClass,NodeRestriction
-    cloud-provider: aws
+    cloud-provider: azure
+    cloud-config: /etc/kubernetes/cloud.conf
     feature-gates: "CSINodeInfo=true,CSIDriverRegistry=true,CSIBlockVolume=true,VolumeSnapshotDataSource=true"
     allow-privileged: "true"
+  extraVolumes:
+  - name: cloud
+    hostPath: "/etc/kubernetes/cloud.conf"
+    mountPath: "/etc/kubernetes/cloud.conf"
 controllerManager:
   extraArgs:
     cloud-provider: azure
+    cloud-config: /etc/kubernetes/cloud.conf
 $(if [[ "${configure_cloud_routes}" = "true" ]]; then
     echo '    configure-cloud-routes: "true"'
 else
     echo '    configure-cloud-routes: "false"'
 fi)
     address: 0.0.0.0
+  extraVolumes:
+  - name: cloud
+    hostPath: "/etc/kubernetes/cloud.conf"
+    mountPath: "/etc/kubernetes/cloud.conf"
 kubernetesVersion: "$k8s_version"
 ---
 apiVersion: kubeproxy.config.k8s.io/v1alpha1
@@ -114,10 +142,12 @@ fi
 curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/ip-masq-agent.yaml | envsubst | kubectl apply -f -
 
 # # Deploy Kiyot/Milpa components.
-# curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot.yaml | envsubst | kubectl apply -f -
+curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot.yaml | envsubst | kubectl apply -f -
 
-# curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot-kube-proxy.yaml | envsubst | kubectl apply -f -
+curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/milpa-config-azure.yaml | envsubst | kubectl apply -f -
 
-# curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot-device-plugin.yaml | envsubst | kubectl apply -f -
+curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot-kube-proxy.yaml | envsubst | kubectl apply -f -
 
-# curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/create-webhook.sh | bash
+curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot-device-plugin.yaml | envsubst | kubectl apply -f -
+
+#curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/create-webhook.sh | bash

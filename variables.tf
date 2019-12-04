@@ -1,6 +1,22 @@
 variable "cluster-name" {
 }
 
+# Azure subscription ID.
+variable "azure-subscription-id" {
+}
+
+# Azure tenant ID.
+variable "azure-tenant-id" {
+}
+
+# Azure client ID.
+variable "azure-client-id" {
+}
+
+# Azure client secret.
+variable "azure-client-secret" {
+}
+
 variable "ssh-key-path" {
   default = "~/.ssh/id_rsa.pub"
 }
@@ -53,7 +69,7 @@ variable "license-password" {
   default = ""
 }
 
-variable "region" {
+variable "location" {
   default = "East US"
 }
 
