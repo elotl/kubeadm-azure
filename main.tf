@@ -91,7 +91,7 @@ resource "azurerm_virtual_machine" "k8s-master" {
     managed_disk_type = "Standard_LRS"
   }
   os_profile {
-    computer_name  = "master"
+    computer_name  = "${var.cluster-name}-k8s-master"
     admin_username = "ubuntu"
     # admin_password = ""
     custom_data = data.template_file.master-userdata.rendered
@@ -128,7 +128,6 @@ resource "azurerm_network_interface" "kiyot-worker-nic" {
   }
 }
 
-
 resource "azurerm_virtual_machine" "k8s-worker" {
   name                  = "${var.cluster-name}-k8s-worker"
   location              = "${azurerm_resource_group.kiyot.location}"
@@ -152,7 +151,7 @@ resource "azurerm_virtual_machine" "k8s-worker" {
     managed_disk_type = "Standard_LRS"
   }
   os_profile {
-    computer_name  = "kiyotworker"
+    computer_name  = "${var.cluster-name}-k8s-worker"
     admin_username = "ubuntu"
     # admin_password = ""
     custom_data = data.template_file.milpa-worker-userdata.rendered
@@ -216,6 +215,7 @@ data "template_file" "master-userdata" {
     vnet_name               = azurerm_virtual_network.kiyot-vnet.name
     resource_group          = azurerm_resource_group.kiyot.name
     route_table_name        = azurerm_route_table.kiyot-rt.name
+    node_name               = "${var.cluster-name}-k8s-master"
   }
 }
 
@@ -223,9 +223,20 @@ data "template_file" "milpa-worker-userdata" {
   template = file(var.milpa-worker-userdata)
 
   vars = {
-    k8stoken        = local.k8stoken
-    k8s_version     = var.k8s-version
-    masterIP        = azurerm_network_interface.master-nic.private_ip_address
-    network_plugin  = var.network-plugin
+    k8stoken              = local.k8stoken
+    k8s_version           = var.k8s-version
+    masterIP              = azurerm_network_interface.master-nic.private_ip_address
+    network_plugin        = var.network-plugin
+    node_nametag          = var.cluster-name
+    azure_subscription_id = var.azure-subscription-id
+    azure_tenant_id       = var.azure-tenant-id
+    azure_client_id       = var.azure-client-id
+    azure_client_secret   = var.azure-client-secret
+    location              = var.location
+    subnet_name           = azurerm_subnet.kiyot-subnet.name
+    vnet_name             = azurerm_virtual_network.kiyot-vnet.name
+    resource_group        = azurerm_resource_group.kiyot.name
+    route_table_name      = azurerm_route_table.kiyot-rt.name
+    node_name             = "${var.cluster-name}-k8s-worker"
   }
 }

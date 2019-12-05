@@ -60,7 +60,7 @@ cat <<EOF > /etc/kubernetes/cloud.conf
     "routeTableResourceGroup": "${resource_group}",
     "cloudProviderBackoff": false,
     "useManagedIdentityExtension": false,
-    "useInstanceMetadata": true,
+    "useInstanceMetadata": false,
 }
 EOF
 
@@ -79,7 +79,7 @@ bootstrapTokens:
   - system:bootstrappers:kubeadm:default-node-token
   token: ${k8stoken}
 nodeRegistration:
-  name: vilmostest-k8s-master
+  name: ${node_name}
   kubeletExtraArgs:
     cloud-provider: azure
     cloud-config: /etc/kubernetes/cloud.conf
