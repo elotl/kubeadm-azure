@@ -23,6 +23,7 @@ resource "azurerm_subnet" "kiyot-subnet" {
   resource_group_name  = "${azurerm_resource_group.kiyot.name}"
   virtual_network_name = "${azurerm_virtual_network.kiyot-vnet.name}"
   address_prefix       = cidrsubnet(var.vpc-cidr, 4, 0)
+  route_table_id       = azurerm_route_table.kiyot-rt.id
 }
 
 resource "azurerm_route_table" "kiyot-rt" {
