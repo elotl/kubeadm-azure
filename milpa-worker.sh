@@ -71,6 +71,28 @@ systemctl daemon-reload
 systemctl enable criproxy
 systemctl restart criproxy
 
+mkdir -p /etc/kubernetes
+cat <<EOF > /etc/kubernetes/cloud.conf
+{
+    "cloud":"AzurePublicCloud",
+    "subscriptionId": "${azure_subscription_id}",
+    "tenantId": "${azure_tenant_id}",
+    "aadClientId": "${azure_client_id}",
+    "aadClientSecret": "${azure_client_secret}",
+    "resourceGroup": "${resource_group}",
+    "location": "${location}",
+    "subnetName": "${subnet_name}",
+    "securityGroupName": "${node_nametag}",
+    "vnetName": "${vnet_name}",
+    "vnetResourceGroup": "${resource_group}",
+    "routeTableName": "${route_table_name}",
+    "primaryAvailabilitySetName": "${node_nametag}",
+    "routeTableResourceGroup": "${resource_group}",
+    "cloudProviderBackoff": false,
+    "useManagedIdentityExtension": false,
+    "useInstanceMetadata": false,
+}
+EOF
 
 cat <<EOF > /tmp/kubeadm-config.yaml
 apiVersion: kubeadm.k8s.io/v1beta1
@@ -81,9 +103,11 @@ discovery:
     unsafeSkipCAVerification: true
     apiServerEndpoint: ${masterIP}:6443
 nodeRegistration:
-  name: vilmostest-k8s-worker
+  name: ${node_name}
   criSocket: unix:///run/criproxy.sock
   kubeletExtraArgs:
+    cloud-provider: azure
+    cloud-config: /etc/kubernetes/cloud.conf
 $(if [[ "${network_plugin}" = "kubenet" ]]; then
     echo "    network-plugin: kubenet"
     echo "    non-masquerade-cidr: 0.0.0.0/0"
