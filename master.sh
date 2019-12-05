@@ -145,7 +145,10 @@ fi
 # Set up ip-masq-agent.
 curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/ip-masq-agent.yaml | envsubst | kubectl apply -f -
 
-# # Deploy Kiyot/Milpa components.
+# Azure cloud provider RBAC configuration.
+curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/azure-cloud-provider.yaml | envsubst | kubectl apply -f -
+
+# Deploy Kiyot/Milpa components.
 curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot.yaml | envsubst | kubectl apply -f -
 
 curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/milpa-config-azure.yaml | envsubst | kubectl apply -f -
