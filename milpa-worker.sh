@@ -7,6 +7,10 @@ EOF
 apt-get update
 apt-get install -y kubelet="${k8s_version}*" kubeadm="${k8s_version}*" kubectl="${k8s_version}*" kubernetes-cni containerd
 
+# Kubelet with azure provider fix.
+curl -fL https://milpa-builds.s3.amazonaws.com/kubelet > /usr/bin/kubelet
+chmod 755 /usr/bin/kubelet
+
 modprobe br_netfilter
 sysctl net.bridge.bridge-nf-call-iptables=1; echo "net.bridge.bridge-nf-call-iptables=1" >> /etc/sysctl.conf
 sysctl net.ipv4.ip_forward=1; echo "net.ipv4.ip_forward=1" >> /etc/sysctl.conf

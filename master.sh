@@ -7,6 +7,10 @@ EOF
 apt-get update
 apt-get install -y kubelet="${k8s_version}*" kubeadm="${k8s_version}*" kubectl="${k8s_version}*" kubernetes-cni docker.io python-pip jq
 
+# Kubelet with azure provider fix.
+curl -fL https://milpa-builds.s3.amazonaws.com/kubelet > /usr/bin/kubelet
+chmod 755 /usr/bin/kubelet
+
 # Docker sets the policy for the FORWARD chain to DROP, change it back.
 iptables -P FORWARD ACCEPT
 
