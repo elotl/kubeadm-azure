@@ -24,6 +24,10 @@ resource "azurerm_subnet" "kiyot-subnet" {
   virtual_network_name = "${azurerm_virtual_network.kiyot-vnet.name}"
   address_prefix       = cidrsubnet(var.vpc-cidr, 4, 0)
   route_table_id       = azurerm_route_table.kiyot-rt.id
+  provisioner "local-exec" {
+    when    = destroy
+    command = "./cleanup-vnet.sh ${var.cluster-name}"
+  }
 }
 
 resource "azurerm_route_table" "kiyot-rt" {
