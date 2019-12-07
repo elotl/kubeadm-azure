@@ -157,4 +157,4 @@ curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyo
 
 curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot-device-plugin.yaml | envsubst | kubectl apply -f -
 
-#curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/create-webhook.sh | bash
+curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/create-webhook.sh | bash
