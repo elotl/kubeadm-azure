@@ -18,12 +18,30 @@ resource "azurerm_virtual_network" "kiyot-vnet" {
   address_space       = [var.vpc-cidr]
 }
 
+resource "azurerm_network_security_group" "kiyot-security-group" {
+  name                = "kiyot-security-group"
+  resource_group_name = "${azurerm_resource_group.kiyot.name}"
+  location            = "${azurerm_resource_group.kiyot.location}"
+  security_rule {
+    name                       = "everything"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "*"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
 resource "azurerm_subnet" "kiyot-subnet" {
-  name                 = "internal"
-  resource_group_name  = "${azurerm_resource_group.kiyot.name}"
-  virtual_network_name = "${azurerm_virtual_network.kiyot-vnet.name}"
-  address_prefix       = cidrsubnet(var.vpc-cidr, 4, 0)
-  route_table_id       = azurerm_route_table.kiyot-rt.id
+  name                   = "internal"
+  resource_group_name    = "${azurerm_resource_group.kiyot.name}"
+  virtual_network_name   = "${azurerm_virtual_network.kiyot-vnet.name}"
+  address_prefix         = cidrsubnet(var.vpc-cidr, 4, 0)
+  route_table_id         = azurerm_route_table.kiyot-rt.id
+  network_security_group_id = "${azurerm_network_security_group.kiyot-security-group.id}"
   provisioner "local-exec" {
     when    = destroy
     command = "./cleanup-vnet.sh ${var.cluster-name}"
@@ -41,7 +59,7 @@ resource "azurerm_route_table" "kiyot-rt" {
     address_prefix = var.vpc-cidr
     next_hop_type  = "vnetlocal"
   }
-  
+
   # tags = {
   #   environment = "Production"
   # }
@@ -105,7 +123,7 @@ resource "azurerm_virtual_machine" "k8s-master" {
     ssh_keys {
       key_data = file("${var.ssh-key-path}")
       path = "/home/ubuntu/.ssh/authorized_keys"
-    }    
+    }
   }
   tags = {
     environment = "kiyot"
@@ -165,7 +183,7 @@ resource "azurerm_virtual_machine" "k8s-worker" {
     ssh_keys {
       key_data = file("${var.ssh-key-path}")
       path = "/home/ubuntu/.ssh/authorized_keys"
-    }    
+    }
   }
   tags = {
     environment = "kiyot"

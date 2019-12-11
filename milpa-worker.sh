@@ -119,6 +119,7 @@ fi)
     max-pods: "1000"
     node-labels: elotl.co/milpa-worker=""
     feature-gates: "CSINodeInfo=true,CSIDriverRegistry=true,CSIBlockVolume=true"
+    runtime-request-timeout: "4m0s"
 EOF
 
 # Override number of CPUs and memory cadvisor reports.
@@ -159,4 +160,3 @@ systemctl restart kiyot-override-proc
 
 # Join cluster.
 kubeadm join --config=/tmp/kubeadm-config.yaml
-

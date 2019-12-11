@@ -52,7 +52,7 @@ cat <<EOF > /etc/kubernetes/cloud.conf
     "resourceGroup": "${resource_group}",
     "location": "${location}",
     "subnetName": "${subnet_name}",
-    "securityGroupName": "${node_nametag}",
+    "securityGroupName": "kiyot-security-group",
     "vnetName": "${vnet_name}",
     "vnetResourceGroup": "${resource_group}",
     "routeTableName": "${route_table_name}",
