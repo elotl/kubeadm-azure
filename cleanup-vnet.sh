@@ -36,7 +36,7 @@ check_prg az
 check_prg jq
 
 while true; do
-    groups=$(az vm list | jq -r ".[] | select (.tags[\"MilpaNametag\"]) | select(.tags[\"MilpaNametag\"]==\"vilmostest\") | .resourceGroup" | sort | uniq)
+    groups=$(az vm list | jq -r ".[] | select (.tags[\"MilpaNametag\"]) | select(.tags[\"MilpaNametag\"]==\"$MILPA_NAMETAG\") | .resourceGroup" | sort | uniq)
     if [[ -z "$groups" ]]; then
         break
     fi
