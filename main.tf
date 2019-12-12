@@ -78,9 +78,10 @@ resource "azurerm_public_ip" "master-ip" {
 }
 
 resource "azurerm_network_interface" "master-nic" {
-  name                = "${var.cluster-name}-master-nic"
-  location            = "${azurerm_resource_group.kiyot.location}"
-  resource_group_name = "${azurerm_resource_group.kiyot.name}"
+  name                  = "${var.cluster-name}-master-nic"
+  location              = "${azurerm_resource_group.kiyot.location}"
+  resource_group_name   = "${azurerm_resource_group.kiyot.name}"
+  enable_ip_forwarding  = true
 
   ip_configuration {
     name                          = "${var.cluster-name}-master-nic"
@@ -138,9 +139,10 @@ resource "azurerm_public_ip" "worker-ip" {
 }
 
 resource "azurerm_network_interface" "kiyot-worker-nic" {
-  name                = "${var.cluster-name}-kiyot-worker-nic"
-  location            = "${azurerm_resource_group.kiyot.location}"
-  resource_group_name = "${azurerm_resource_group.kiyot.name}"
+  name                  = "${var.cluster-name}-kiyot-worker-nic"
+  location              = "${azurerm_resource_group.kiyot.location}"
+  resource_group_name   = "${azurerm_resource_group.kiyot.name}"
+  enable_ip_forwarding  = true
 
   ip_configuration {
     name                          = "${var.cluster-name}-kiyot-worker-nic"
