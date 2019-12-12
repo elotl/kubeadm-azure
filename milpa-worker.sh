@@ -90,7 +90,6 @@ cat <<EOF > /etc/kubernetes/cloud.conf
     "vnetName": "${vnet_name}",
     "vnetResourceGroup": "${resource_group}",
     "routeTableName": "${route_table_name}",
-    "primaryAvailabilitySetName": "${node_nametag}",
     "routeTableResourceGroup": "${resource_group}",
     "cloudProviderBackoff": false,
     "useManagedIdentityExtension": false,
