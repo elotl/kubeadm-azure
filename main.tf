@@ -74,6 +74,14 @@ resource "azurerm_subnet" "kiyot-subnet" {
   }
 }
 
+resource "azurerm_lb" "kubernetes" {
+  name                = "kubernetes"
+  location            = "${azurerm_resource_group.kiyot.location}"
+  resource_group_name = "${azurerm_resource_group.kiyot.name}"
+
+  depends_on = [azurerm_subnet.kiyot-subnet]
+}
+
 resource "azurerm_route_table" "kiyot-rt" {
   name                          = "kiyot-routetable"
   location                      = "${azurerm_resource_group.kiyot.location}"
