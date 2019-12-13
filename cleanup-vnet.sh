@@ -35,6 +35,6 @@ fi
 check_prg az
 check_prg jq
 
-az vm list | jq -r ".[] | select (.tags[\"MilpaNametag\"]) | select(.tags[\"MilpaNametag\"]==\"$MILPA_NAMETAG\") | .resourceGroup" | sort | uniq | xargs -n1 -P20 az group delete --yes --name
+az vm list | jq -r ".[] | select (.tags[\"MilpaNametag\"]) | select(.tags[\"MilpaNametag\"]==\"$MILPA_NAMETAG\") | .resourceGroup" | sort | uniq | xargs -n1 -P20 --no-run-if-empty az group delete --yes --name
 
 exit 0
