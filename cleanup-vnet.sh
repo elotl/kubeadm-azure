@@ -35,16 +35,6 @@ fi
 check_prg az
 check_prg jq
 
-while true; do
-    groups=$(az vm list | jq -r ".[] | select (.tags[\"MilpaNametag\"]) | select(.tags[\"MilpaNametag\"]==\"$MILPA_NAMETAG\") | .resourceGroup" | sort | uniq)
-    if [[ -z "$groups" ]]; then
-        break
-    fi
-    echo "Removing resource groups:"
-    echo "$groups"
-    for group in $groups; do
-        az group delete --yes -g $group
-    done
-done
+az vm list | jq -r ".[] | select (.tags[\"MilpaNametag\"]) | select(.tags[\"MilpaNametag\"]==\"$MILPA_NAMETAG\") | .resourceGroup" | sort | uniq | xargs -n1 -P20 az group delete --yes --name
 
 exit 0
