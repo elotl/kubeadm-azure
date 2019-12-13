@@ -85,10 +85,6 @@ resource "azurerm_route_table" "kiyot-rt" {
     address_prefix = var.vpc-cidr
     next_hop_type  = "vnetlocal"
   }
-
-  # tags = {
-  #   environment = "Production"
-  # }
 }
 
 resource "azurerm_subnet_route_table_association" "kiyot-rt-assoc" {
