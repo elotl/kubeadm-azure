@@ -18,20 +18,47 @@ resource "azurerm_virtual_network" "kiyot-vnet" {
   address_space       = [var.vpc-cidr]
 }
 
+# The k8s azure cloud provider will also add rules to this NSG when exposing
+# services via an LB.
 resource "azurerm_network_security_group" "kiyot-security-group" {
   name                = "kiyot-security-group"
   resource_group_name = "${azurerm_resource_group.kiyot.name}"
   location            = "${azurerm_resource_group.kiyot.location}"
+
   security_rule {
-    name                       = "everything"
-    priority                   = 100
-    direction                  = "Inbound"
-    access                     = "Allow"
-    protocol                   = "Tcp"
-    source_port_range          = "*"
-    destination_port_range     = "*"
-    source_address_prefix      = "*"
-    destination_address_prefix = "*"
+    name                        = "allow-vnet"
+    priority                    = 100
+    direction                   = "Inbound"
+    access                      = "Allow"
+    protocol                    = "*"
+    source_port_range           = "*"
+    destination_port_range      = "*"
+    source_address_prefix       = "VirtualNetwork"
+    destination_address_prefix  = "*"
+  }
+
+  security_rule {
+    name                        = "allow-lb"
+    priority                    = 200
+    direction                   = "Inbound"
+    access                      = "Allow"
+    protocol                    = "*"
+    source_port_range           = "*"
+    destination_port_range      = "*"
+    source_address_prefix       = "AzureLoadBalancer"
+    destination_address_prefix  = "*"
+  }
+
+  security_rule {
+    name                        = "allow-ssh-from-internet"
+    priority                    = 300
+    direction                   = "Inbound"
+    access                      = "Allow"
+    protocol                    = "Tcp"
+    source_port_range           = "*"
+    destination_port_range      = "22"
+    source_address_prefix       = "Internet"
+    destination_address_prefix  = "*"
   }
 }
 
@@ -41,7 +68,6 @@ resource "azurerm_subnet" "kiyot-subnet" {
   virtual_network_name   = "${azurerm_virtual_network.kiyot-vnet.name}"
   address_prefix         = cidrsubnet(var.vpc-cidr, 4, 0)
   route_table_id         = azurerm_route_table.kiyot-rt.id
-  network_security_group_id = "${azurerm_network_security_group.kiyot-security-group.id}"
   provisioner "local-exec" {
     when    = destroy
     command = "./cleanup-vnet.sh ${var.cluster-name}"
@@ -78,10 +104,11 @@ resource "azurerm_public_ip" "master-ip" {
 }
 
 resource "azurerm_network_interface" "master-nic" {
-  name                  = "${var.cluster-name}-master-nic"
-  location              = "${azurerm_resource_group.kiyot.location}"
-  resource_group_name   = "${azurerm_resource_group.kiyot.name}"
-  enable_ip_forwarding  = true
+  name                      = "${var.cluster-name}-master-nic"
+  location                  = "${azurerm_resource_group.kiyot.location}"
+  resource_group_name       = "${azurerm_resource_group.kiyot.name}"
+  enable_ip_forwarding      = true
+  network_security_group_id = azurerm_network_security_group.kiyot-security-group.id
 
   ip_configuration {
     name                          = "${var.cluster-name}-master-nic"
@@ -139,10 +166,11 @@ resource "azurerm_public_ip" "worker-ip" {
 }
 
 resource "azurerm_network_interface" "kiyot-worker-nic" {
-  name                  = "${var.cluster-name}-kiyot-worker-nic"
-  location              = "${azurerm_resource_group.kiyot.location}"
-  resource_group_name   = "${azurerm_resource_group.kiyot.name}"
-  enable_ip_forwarding  = true
+  name                      = "${var.cluster-name}-kiyot-worker-nic"
+  location                  = "${azurerm_resource_group.kiyot.location}"
+  resource_group_name       = "${azurerm_resource_group.kiyot.name}"
+  enable_ip_forwarding      = true
+  network_security_group_id = azurerm_network_security_group.kiyot-security-group.id
 
   ip_configuration {
     name                          = "${var.cluster-name}-kiyot-worker-nic"
