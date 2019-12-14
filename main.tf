@@ -222,6 +222,8 @@ resource "azurerm_virtual_machine" "k8s-worker" {
   tags = {
     environment = "kiyot"
   }
+
+  depends_on = [azurerm_lb.kubernetes]
 }
 
 resource "random_id" "k8stoken-prefix" {
