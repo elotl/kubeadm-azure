@@ -105,6 +105,7 @@ discovery:
     token: ${k8stoken}
     unsafeSkipCAVerification: true
     apiServerEndpoint: ${masterIP}:6443
+  timeout: 24h
 nodeRegistration:
   name: ${node_name}
   criSocket: unix:///run/criproxy.sock
