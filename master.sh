@@ -121,11 +121,12 @@ fi)
     hostPath: "/etc/kubernetes/cloud.conf"
     mountPath: "/etc/kubernetes/cloud.conf"
 kubernetesVersion: "$k8s_version"
----
-apiVersion: kubeproxy.config.k8s.io/v1alpha1
-kind: KubeProxyConfiguration
-iptables:
-  masqueradeAll: true
+# Enable kube-proxy masqueradeAll if kiyot-kube-proxy is enabled.
+#---
+#apiVersion: kubeproxy.config.k8s.io/v1alpha1
+#kind: KubeProxyConfiguration
+#iptables:
+#  masqueradeAll: true
 EOF
 kubeadm init --config=/tmp/kubeadm-config.yaml
 
@@ -155,7 +156,10 @@ curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyo
 
 curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/milpa-config-azure.yaml | envsubst | kubectl apply -f -
 
-curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot-kube-proxy.yaml | envsubst | kubectl apply -f -
+# Uncomment this if the fargate backend is in use. In that case, we also need
+# to start a kube-proxy pod for cells, since fargate cells don't have their own
+# service proxy running.
+#curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot-kube-proxy.yaml | envsubst | kubectl apply -f -
 
 curl -fL https://raw.githubusercontent.com/elotl/milpa-deploy/master/deploy/kiyot-device-plugin.yaml | envsubst | kubectl apply -f -
 
